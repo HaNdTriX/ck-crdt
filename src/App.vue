@@ -10,7 +10,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ClassicEditor, Bold, Essentials, Italic, Mention, Paragraph, Undo } from 'ckeditor5'
+import {
+  ClassicEditor,
+  Bold,
+  Essentials,
+  Italic,
+  Mention,
+  Paragraph,
+  Undo,
+  List,
+  ListProperties,
+} from 'ckeditor5'
 import CollaborationPlugin from './plugins/collaboration/Collaboration'
 import { ref } from 'vue'
 
@@ -21,8 +31,18 @@ const handleEditorChange = (content: string) => {
 }
 
 const editorConfig = {
-  plugins: [Bold, Essentials, Italic, Mention, Paragraph, Undo, CollaborationPlugin],
-  toolbar: ['undo', 'redo', '|', 'bold', 'italic'],
+  plugins: [
+    Bold,
+    Essentials,
+    Italic,
+    Mention,
+    Paragraph,
+    Undo,
+    CollaborationPlugin,
+    List,
+    ListProperties,
+  ],
+  toolbar: ['undo', 'redo', '|', 'bold', 'italic', '|', 'bulletedList', 'numberedList'],
   // Other configuration options...
 }
 </script>
