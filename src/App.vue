@@ -1,47 +1,28 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <div id="app">
+    <ckeditor
+      :model-value="editorData"
+      @update:model-value="handleEditorChange"
+      :editor="ClassicEditor"
+      :config="editorConfig"
+    />
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<script lang="ts" setup>
+import { ClassicEditor, Bold, Essentials, Italic, Mention, Paragraph, Undo } from 'ckeditor5'
+import { CollaborationPlugin } from './plugins/CollaborationPlugin'
+import { ref } from 'vue'
+
+const editorData = ref('')
+
+const handleEditorChange = (content: string) => {
+  console.log('Editor content changed:', content)
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+const editorConfig = {
+  plugins: [Bold, Essentials, Italic, Mention, Paragraph, Undo, CollaborationPlugin],
+  toolbar: ['undo', 'redo', '|', 'bold', 'italic'],
+  // Other configuration options...
 }
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
-</style>
+</script>

@@ -11,7 +11,7 @@
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "ws-server": "node src/server/websocket-server.ts"
+    "ws-server": "HOST=localhost PORT=1234 y-websocket"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-vue": "^7.3.0",
@@ -19,8 +19,8 @@
     "vue": "^3.5.12",
     "y-indexeddb": "^9.0.12",
     "y-webrtc": "^10.3.0",
-    "yjs": "^13.6.20",
-    "y-websocket": "^1.5.4"
+    "y-websocket": "^2.0.4",
+    "yjs": "^13.6.20"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
