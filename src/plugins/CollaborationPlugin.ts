@@ -1,9 +1,10 @@
 import { Plugin } from 'ckeditor5'
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
+import { IndexeddbPersistence } from 'y-indexeddb'
 
 export class CollaborationPlugin extends Plugin {
-  provider?: WebsocketProvider
+  providers?: (WebsocketProvider | IndexeddbPersistence)[]
 
   static get pluginName() {
     return 'Collaboration'
@@ -12,17 +13,41 @@ export class CollaborationPlugin extends Plugin {
   init() {
     const editor = this.editor
     const ydoc = new Y.Doc()
-
-    // Connect to WebSocket server
-    this.provider = new WebsocketProvider('ws://localhost:1234', 'ckeditor-room-3', ydoc, {
-      connect: true,
-    })
-
     const ytext = ydoc.getText('editor')
 
+    // Set up both providers to sync the same document
+    this.providers = [
+      new IndexeddbPersistence('ckeditor-room-3', ydoc),
+      new WebsocketProvider('ws://localhost:1234', 'ckeditor-room-3', ydoc, {
+        connect: true,
+        maxBackoffTime: 5000,
+      }),
+    ]
+
+    // Handle connection status from WebSocket provider
+    const wsProvider = this.providers[1] as WebsocketProvider
+    wsProvider.on('status', ({ status }: { status: 'connected' | 'disconnected' }) => {
+      const editorElement = this.editor.ui.getEditableElement()
+      if (editorElement) {
+        editorElement.classList.toggle('offline-mode', status === 'disconnected')
+      }
+    })
+
+    // Add connection status handling
+    this.providers.forEach((provider) => {
+      if (provider instanceof WebsocketProvider) {
+        provider.on('status', ({ status }: { status: 'connected' | 'disconnected' }) => {
+          const editorElement = this.editor.ui.getEditableElement()
+          if (editorElement) {
+            editorElement.classList.toggle('offline-mode', status === 'disconnected')
+          }
+        })
+      }
+    })
+
     // Set up awareness (cursor positions, user info)
-    const awareness = this.provider.awareness
-    awareness.setLocalState({
+    const awareness = this.providers[1] as WebsocketProvider
+    awareness.awareness.setLocalState({
       user: {
         name: 'User ' + Math.floor(Math.random() * 100),
         color: '#' + Math.floor(Math.random() * 16777215).toString(16),
@@ -49,17 +74,17 @@ export class CollaborationPlugin extends Plugin {
           const x = event.clientX - rect.left
           const y = event.clientY - rect.top + 40
 
-          awareness.setLocalStateField('mouse', { x, y })
+          awareness.awareness.setLocalStateField('mouse', { x, y })
         })
 
         editorElement.addEventListener('mouseleave', () => {
-          awareness.setLocalStateField('mouse', null)
+          awareness.awareness.setLocalStateField('mouse', null)
         })
       }
 
       // Handle remote cursors
-      awareness.on('change', () => {
-        const states = awareness.getStates()
+      awareness.awareness.on('change', () => {
+        const states = awareness.awareness.getStates()
 
         // Clear existing cursors
         const existingCursors = cursorContainer.querySelectorAll('.remote-mouse-cursor')
@@ -67,7 +92,7 @@ export class CollaborationPlugin extends Plugin {
 
         // Add remote cursors
         states.forEach((state, clientId) => {
-          if (clientId !== awareness.clientID && state.mouse) {
+          if (clientId !== awareness.awareness.clientID && state.mouse) {
             const cursor = document.createElement('div')
             cursor.className = 'remote-mouse-cursor'
             cursor.innerHTML = `
@@ -108,12 +133,16 @@ export class CollaborationPlugin extends Plugin {
     })
 
     // Handle initial content
-    this.provider.on('sync', (isSynced: boolean) => {
-      if (isSynced) {
-        const initialContent = ytext.toString()
-        if (initialContent) {
-          editor.setData(initialContent)
-        }
+    this.providers.forEach((provider) => {
+      if (provider instanceof WebsocketProvider) {
+        provider.on('sync', (isSynced: boolean) => {
+          if (isSynced) {
+            const initialContent = ytext.toString()
+            if (initialContent) {
+              editor.setData(initialContent)
+            }
+          }
+        })
       }
     })
   }
@@ -130,6 +159,6 @@ export class CollaborationPlugin extends Plugin {
       }
     }
 
-    this.provider?.destroy()
+    this.providers?.forEach((provider) => provider.destroy())
   }
 }
