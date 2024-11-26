@@ -3,7 +3,7 @@ import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
 import { IndexeddbPersistence } from 'y-indexeddb'
 
-export class CollaborationPlugin extends Plugin {
+export default class CollaborationPlugin extends Plugin {
   providers?: (WebsocketProvider | IndexeddbPersistence)[]
 
   static get pluginName() {
@@ -110,25 +110,36 @@ export class CollaborationPlugin extends Plugin {
       })
     })
 
-    // Improved sync logic
+    // Improved sync logic with debouncing
     let isUpdating = false
+    let pendingUpdate = false
 
     editor.model.document.on('change:data', () => {
       if (!isUpdating) {
         isUpdating = true
         const editorData = editor.getData()
-        ytext.delete(0, ytext.length)
-        ytext.insert(0, editorData)
+        // Only update if content actually changed
+        if (editorData !== ytext.toString()) {
+          ytext.delete(0, ytext.length)
+          ytext.insert(0, editorData)
+        }
         isUpdating = false
       }
     })
 
     ytext.observe(() => {
-      if (!isUpdating) {
-        isUpdating = true
-        const content = ytext.toString()
-        editor.setData(content)
-        isUpdating = false
+      if (!isUpdating && !pendingUpdate) {
+        pendingUpdate = true
+        // Debounce the update to avoid rapid consecutive changes
+        setTimeout(() => {
+          isUpdating = true
+          const content = ytext.toString()
+          if (content !== editor.getData()) {
+            editor.setData(content)
+          }
+          isUpdating = false
+          pendingUpdate = false
+        }, 50) // Small delay to batch rapid changes
       }
     })
 

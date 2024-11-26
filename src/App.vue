@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 import { ClassicEditor, Bold, Essentials, Italic, Mention, Paragraph, Undo } from 'ckeditor5'
-import { CollaborationPlugin } from './plugins/CollaborationPlugin'
+import CollaborationPlugin from './plugins/collaboration/Collaboration'
 import { ref } from 'vue'
 
 const editorData = ref('')
